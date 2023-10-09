@@ -27,7 +27,6 @@
   <artifactId>poi-ooxml</artifactId> 
   <version>5.2.0</version> 
 </dependency>
-<!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-core</artifactId>
