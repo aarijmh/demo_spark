@@ -17,6 +17,13 @@
 			<artifactId>spark-sql_2.13</artifactId>
 		<version>3.5.0</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
+<dependency>
+    <groupId>com.opencsv</groupId>
+    <artifactId>opencsv</artifactId>
+    <version>5.8</version>
+</dependency>
+
 		<dependency> 
   <groupId>org.apache.poi</groupId>
   <artifactId>poi</artifactId> 
