@@ -28,30 +28,71 @@ public class DFComparator {
 
 	public static void main(String[] args) {
 		Dataset<Row> javaDF = getSparkSession().read().option("header", true).option("delimiter", ",")
-				.csv("/home/hadoop/Downloads/CUSTOMER/part-00000-185f444c-fc3f-45f7-9d5d-d22e4b9b396e-c000.csv");
-		System.out.println(javaDF.count());
+				.csv("/home/hadoop/Downloads/CUSTOMER/part-00000-4d7317d5-6bc5-407b-b9fe-56fb54e3e3f3-c000.csv");
+
 		
 		Dataset<Row> rDF = getSparkSession().read().option("header", true).option("delimiter", "|")
 				.csv("/home/hadoop/Downloads/CUSTOMER.AUTON8.202321091251_header.txt");
-		System.out.println(rDF.count());
 
-		javaDF = javaDF.withColumnRenamed("UPLOAD.COMPANY", "UPLOADCOMPANY");
-		rDF = rDF.withColumnRenamed("UPLOAD.COMPANY", "UPLOADCOMPANY");
+		
+
 		String [] javaColumns = javaDF.columns();
 		String [] rColumns = rDF.columns();
+		
+		for(int i = 0; i < javaColumns.length; i++) {
+			String newJavaColumn = javaColumns[i];
+			String rColumn = new String(rColumns[i]);
+			
+//			if(newJavaColumn.contains(".")) {
+//				javaDF = javaDF.withColumnRenamed("`"+newJavaColumn+"`", newJavaColumn.replace('.', '_'));
+//			}
+			
+//			if(rColumn.contains(".")) {
+//				rColumn = rColumn.replace('.', '_').concat("rightDF");
+//				rDF = rDF.withColumnRenamed(rColumns[i], rColumn);
+//				
+//			}else
+//			{
+//				
+//			}
+			rDF = rDF.withColumnRenamed(rColumns[i], rColumn.concat("rightDF"));
+		}
+		
+		javaDF = javaDF.withColumn("unique_row_id", monotonically_increasing_id());
+		rDF = rDF.withColumn("unique_row_id", monotonically_increasing_id());
+	
+		Dataset<Row> merged = javaDF.join(rDF,"unique_row_id","outer").drop("unique_row_id");
+		
+
+		//System.out.println(merged.count());
+		//merged.select("`UPLOAD.COMPANY`").show();
+	//	merged.show();
+		javaDF = javaDF.drop("unique_row_id");
+		rDF = rDF.drop("unique_row_id");
+		javaColumns = javaDF.columns();
+		rColumns = rDF.columns();
+		
 		List<String> compareColumns = new ArrayList<String>();
 		
 		for(int i = 0; i < javaColumns.length; i++) {
 	
-			compareColumns.add(javaColumns[i] + "=="+rColumns[i]);
+			String compColumn = (javaColumns[i] + "="+rColumns[i]).replaceAll("\\.", "_");
+			
 			String col1 = normalizeNames(javaColumns[i]);
 			String col2 = normalizeNames(rColumns[i]);
-			System.out.println(String.format("Comparing %s with %s", col1, col2));
-			javaDF.withColumn(compareColumns.get(i), when(not(javaDF.col(col1).eqNullSafe(rDF.col(col2))),"matched").otherwise("not matched"));
+			compareColumns.add(col1 );
+			compareColumns.add( col2);
+			compareColumns.add( compColumn);
+//			System.out.println(String.format("Comparing %s with %s", col1, col2));
+			
+			merged = merged.withColumn(compColumn, when(not(merged.col(col1).eqNullSafe(merged.col(col2))),"not matched").otherwise("matched"));
 		}
 		
+//		
+
 	    Column [] cols = compareColumns.stream().map(x->col(x)).collect(Collectors.toList()).toArray(new Column[0]); 
-		javaDF.select(cols).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",")
+	    merged.select(cols).show();
+		merged.select(cols).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",")
 				.csv("/home/hadoop/Downloads/DIFFERENCE");
 	}
 

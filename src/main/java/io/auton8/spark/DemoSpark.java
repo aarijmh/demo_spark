@@ -196,7 +196,11 @@ public class DemoSpark {
 	        	List<String[]> lines = csvReader.readAll();
 	        	
 	        	for(String [] line : lines) {
-	        		columnNames.add(line[0]);
+	        		if(line[0].contains(".")) {
+	        			columnNames.add("`"+line[0]+"`");
+	        		}
+	        		else
+	        			columnNames.add(line[0]);
 	        	}
 	        }
 	    }
