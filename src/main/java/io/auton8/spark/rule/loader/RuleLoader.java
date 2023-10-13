@@ -36,8 +36,8 @@ public class RuleLoader {
 		}
 		
 		ruleMap.put("aliasRule", new AliasRule());
-		ruleMap.put("concatColumnRule", new ConcatColumnRule());
-		ruleMap.put("defaultColumnRule", new DefaultColumnRule());
+		ruleMap.put("concatRule", new ConcatColumnRule());
+		ruleMap.put("defaultRule", new DefaultColumnRule());
 		ruleMap.put("mapFromExcelFileRule", new MapFromExcelFileRule());
 		ruleMap.put("modifyDataRule", new ModifyDateRule());
 		ruleMap.put("replaceRegexRule", new ReplaceRegexRule());

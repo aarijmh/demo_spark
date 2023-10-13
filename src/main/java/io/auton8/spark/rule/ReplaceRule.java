@@ -1,8 +1,10 @@
 package io.auton8.spark.rule;
 
 import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.lower;
 import static org.apache.spark.sql.functions.when;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.sql.Column;
@@ -35,6 +37,7 @@ public class ReplaceRule implements IRule {
 		return true;
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public Dataset<Row> apply(Dataset<Row> df, Map<String, Object> params) throws RuleNotApplicatbleException {
 		if (canApply(df, params)) {
@@ -47,6 +50,14 @@ public class ReplaceRule implements IRule {
 			ApplyInterface<Column> tai = (Column col) -> {
 				if(condition.equals("isNull"))
 					return col.isNull();
+				else if(condition.equals("isIn")) {
+					@SuppressWarnings("unchecked")
+					List<String> values = (List<String>) params.get("values");
+					Object [] strs = new Object[values.size()];
+					for(int i = 0; i < values.size(); i++)
+						strs[i] = values.get(i).toLowerCase();
+					return lower(col).isin(strs);
+				}
 				return col;
 			};
 
