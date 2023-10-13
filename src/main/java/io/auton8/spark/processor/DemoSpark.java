@@ -1,5 +1,5 @@
 
-package io.auton8.spark;
+package io.auton8.spark.processor;
 
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -9,6 +9,9 @@ import org.apache.spark.sql.SparkSession;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 
+import io.auton8.spark.interfaces.ApplyInterface;
+import io.auton8.spark.interfaces.TransformInterface;
+import io.auton8.spark.utility.ExcelReader;
 import io.auton8.spark.utility.Pair;
 
 import static org.apache.spark.sql.functions.*;
@@ -27,20 +30,8 @@ import java.util.stream.Collectors;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.spark.sql.Column;
 
-@FunctionalInterface
-interface ApplyInterface<T> {
-	public T apply(T input);
-}
 
-@FunctionalInterface
-interface TransformInterface<T> {
-	public T transform(T input, Map<String, Object> parameters);
-}
 
-@FunctionalInterface
-interface ReplaceInterface<T> {
-	public T transform(T input, String replaceValues, String ... values );
-}
 
 
 public class DemoSpark {

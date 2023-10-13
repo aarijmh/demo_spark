@@ -1,4 +1,4 @@
-package io.auton8.spark;
+package io.auton8.spark.utility;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,8 +11,6 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
-
-import io.auton8.spark.utility.Pair;
 
 public class Converters {
 

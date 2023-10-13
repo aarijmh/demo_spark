@@ -1,4 +1,4 @@
-package io.auton8.spark;
+package io.auton8.spark.processor;
 
 import static org.apache.spark.sql.functions.col;
 
@@ -11,6 +11,9 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
+
+import io.auton8.spark.rule.loader.RuleLoader;
+
 import static org.apache.spark.sql.functions.*;
 
 public class DFComparator {
@@ -27,6 +30,7 @@ public class DFComparator {
 	}
 
 	public static void main(String[] args) {
+		RuleLoader.getRuleMap();
 		Dataset<Row> javaDF = getSparkSession().read().option("header", true).option("delimiter", ",")
 				.csv("/home/hadoop/Downloads/CUSTOMER/part-00000-4d7317d5-6bc5-407b-b9fe-56fb54e3e3f3-c000.csv");
 

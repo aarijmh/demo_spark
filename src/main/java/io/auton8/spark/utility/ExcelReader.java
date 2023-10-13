@@ -1,4 +1,4 @@
-package io.auton8.spark;
+package io.auton8.spark.utility;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -16,8 +16,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructType;
-
-import io.auton8.spark.utility.Pair;
 
 public class ExcelReader {
 	
