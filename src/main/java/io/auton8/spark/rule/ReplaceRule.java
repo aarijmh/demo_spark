@@ -19,7 +19,6 @@ import io.auton8.spark.interfaces.ApplyInterface;
 @RuleAnnotation(ruleName = "replaceRule")
 public class ReplaceRule implements IRule {
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public boolean canApply(Dataset<Row> df, Map<String, Object> params) throws RuleNotApplicatbleException {
 
@@ -31,20 +30,11 @@ public class ReplaceRule implements IRule {
 			throw new RuleNotApplicatbleException("Alias Column parameter is required");
 		if (!params.containsKey("thenValue"))
 			throw new RuleNotApplicatbleException("Then value parameter is required");
-		if (!params.containsKey("tai"))
-			throw new RuleNotApplicatbleException("TAI  parameter is required");
-		try {
-			if (!((ApplyInterface<Column>) params.get("tai") instanceof ApplyInterface<Column>)) {
-
-				throw new RuleNotApplicatbleException("TAI  parameter is invalid");
-			}
-		} catch (Exception e) {
-			throw new RuleNotApplicatbleException("TAI  parameter is invalid");
-		}
+		if (!params.containsKey("condition"))
+			throw new RuleNotApplicatbleException("condition  parameter is required");
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Dataset<Row> apply(Dataset<Row> df, Map<String, Object> params) throws RuleNotApplicatbleException {
 		if (canApply(df, params)) {
@@ -52,13 +42,18 @@ public class ReplaceRule implements IRule {
 			String aliasColumn = (String) params.get("aliasColumn");
 			String originalColumn = (String) params.get("originalColumn");
 			String thenValue = (String) params.get("thenValue");
+			String condition = (String) params.get("condition");
 
-			ApplyInterface<Column> tai = (ApplyInterface<Column>) params.get("tai");
+			ApplyInterface<Column> tai = (Column col) -> {
+				if(condition.equals("isNull"))
+					return col.isNull();
+				return col;
+			};
 
 			return df.withColumn(aliasColumn,
 					when(tai.apply(df.col(originalColumn)), thenValue).otherwise(col(originalColumn)));
 		}
-		return null;
+		return df;
 	}
 
 }

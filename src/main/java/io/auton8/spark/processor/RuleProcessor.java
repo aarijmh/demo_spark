@@ -31,6 +31,11 @@ public class RuleProcessor {
 		return SparkSession.builder().appName("Customer Aggregation pipeline").master("local").getOrCreate();
 	}
 
+	public static String normalizeColumnNameForDF(String columnName) {
+		if(columnName.contains("."))
+			return "`"+columnName+"`";
+		return columnName;
+	}
 	
 	public static void main(String [] args) throws JsonSyntaxException, JsonIOException, FileNotFoundException {
 		Gson gson = new Gson();
@@ -40,21 +45,28 @@ public class RuleProcessor {
 		List<String> columnNames = new ArrayList<String>();
 		
 		for(FileColumn fileColumn : inputFile.getColumns()) {
-			if(fileColumn.getAliasName() == null && fileColumn.getRules() == null)
+			if(fileColumn.getAliasName() == null && fileColumn.getRules() == null) {
+				columnNames.add(fileColumn.getColumnName());
 				continue;
+			}
+			
+			String originalName = normalizeColumnNameForDF(fileColumn.getColumnName());
+			String aliasName = null;
+			
 			if(fileColumn.getAliasName() != null) {
-				columnNames.add(fileColumn.getAliasName());
+				aliasName = fileColumn.getAliasName();
+				columnNames.add(aliasName);
 			}
 			else {
-				columnNames.add(fileColumn.getColumnName());
+				columnNames.add(originalName);
 			}
 			
 			if(fileColumn.getRules() != null) {
 				for(FileRule fileRule : fileColumn.getRules()) {
 					fileRule.getParams().put("sparkSession", getSparkSession());
-					fileRule.getParams().put("originalColumn", fileColumn.getColumnName());
+					fileRule.getParams().put("originalColumn", originalName);
 					if(fileColumn.getAliasName() != null)
-						fileRule.getParams().put("aliasColumn", fileColumn.getAliasName());
+						fileRule.getParams().put("aliasColumn", aliasName);
 					try {
 						df = RuleLoader.getRuleMap().get(fileRule.getRuleName()).apply(df, fileRule.getParams());
 					} catch (RuleNotApplicatbleException e) {
@@ -64,9 +76,10 @@ public class RuleProcessor {
 			}
 			
 		}
+	
+		df.show();
 		
-		
-	    Column [] cols = columnNames.stream().map(x->col(x)).collect(Collectors.toList()).toArray(new Column[0]); 
+	    Column [] cols = columnNames.stream().map(x->col(normalizeColumnNameForDF(x))).collect(Collectors.toList()).toArray(new Column[0]); 
 	    df.select(cols).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",")
 				.csv("/home/hadoop/Downloads/TEST");
 		
