@@ -3,6 +3,7 @@ package io.auton8.spark.rule;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.lower;
 import static org.apache.spark.sql.functions.when;
+import static org.apache.spark.sql.functions.not;
 
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,13 @@ public class ReplaceRule implements IRule {
 					for(int i = 0; i < values.size(); i++)
 						strs[i] = values.get(i).toLowerCase();
 					return lower(col).isin(strs);
+				}else if(condition.equals("isNotIn")) {
+					@SuppressWarnings("unchecked")
+					List<String> values = (List<String>) params.get("values");
+					Object [] strs = new Object[values.size()];
+					for(int i = 0; i < values.size(); i++)
+						strs[i] = values.get(i).toLowerCase();
+					return not(lower(col).isin(strs));
 				}
 				return col;
 			};

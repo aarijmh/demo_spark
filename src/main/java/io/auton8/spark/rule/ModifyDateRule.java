@@ -5,6 +5,7 @@ import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.date_format;
 import static org.apache.spark.sql.functions.to_timestamp;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.sql.Column;
@@ -12,7 +13,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
 import io.auton8.spark.exceptions.RuleNotApplicatbleException;
-import io.auton8.spark.utility.Pair;
 
 public class ModifyDateRule implements IRule {
 	
@@ -28,7 +28,7 @@ public class ModifyDateRule implements IRule {
 		if (!params.containsKey("formats"))
 			throw new RuleNotApplicatbleException("formats value parameter is required");
 		try {
-			if (!((Pair<String,String>[]) params.get("formats") instanceof Pair<String,String>[])) {
+			if (!((List<Map<String,String>>) params.get("formats") instanceof List<Map<String,String>>)) {
 
 				throw new RuleNotApplicatbleException("formats  parameter is invalid");
 			}
@@ -45,13 +45,15 @@ public class ModifyDateRule implements IRule {
 
 			String aliasColumn = (String) params.get("aliasColumn");
 			String originalColumn = (String) params.get("originalColumn");
-			Pair<String,String>[] formats = (Pair<String,String>[]) params.get("formats");
+			List<Map<String,String>> formats = (List<Map<String,String>>) params.get("formats");
+			
+			
 
-			Column[] cols = new Column[formats.length];
+			Column[] cols = new Column[formats.size()];
 
 			int index = 0;
-			for (Pair<String, String> pair : formats) {			
-				cols[index++] = date_format(to_timestamp(col(originalColumn), pair.getKey()), pair.getValue());
+			for (Map<String,String> pair : formats) {			
+				cols[index++] = date_format(to_timestamp(col(originalColumn), pair.get("source")), pair.get("target"));
 			}
 
 			return df.withColumn(aliasColumn, coalesce(cols));

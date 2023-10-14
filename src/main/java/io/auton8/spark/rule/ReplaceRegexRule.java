@@ -40,6 +40,7 @@ public class ReplaceRegexRule implements IRule {
 			String findReg = (String) params.get("findReg");
 			String replaceValue = (String) params.get("replaceValue");
 			
+			
 			return df.withColumn(aliasColumn, regexp_replace(col(originalColumn), findReg, replaceValue));
 		}
 		return df;

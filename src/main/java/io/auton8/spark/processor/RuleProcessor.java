@@ -39,6 +39,8 @@ public class RuleProcessor {
 	
 	public static void main(String [] args) throws JsonSyntaxException, JsonIOException, FileNotFoundException {
 		Gson gson = new Gson();
+		
+		long startProgram = System.currentTimeMillis();
 		InputFile inputFile = gson.fromJson(new FileReader(new File("/home/hadoop/Documents/customer.json")), InputFile.class);
 		
 		Dataset<Row> df = getSparkSession().read().options(inputFile.getFileOptions()).csv(inputFile.getFileName()); 
@@ -70,18 +72,25 @@ public class RuleProcessor {
 					try {
 						df = RuleLoader.getRuleMap().get(fileRule.getRuleName()).apply(df, fileRule.getParams());
 					} catch (RuleNotApplicatbleException e) {
+						System.out.println("Column name : "+fileColumn.getColumnName() + " -- "+fileRule.getRuleName());
 						e.printStackTrace();
 					}
 				}
 			}
 			
 		}
+		long endTransform = System.currentTimeMillis();
 	
-		df.show();
+		//df.show();
 		
 	    Column [] cols = columnNames.stream().map(x->col(normalizeColumnNameForDF(x))).collect(Collectors.toList()).toArray(new Column[0]); 
 	    df.select(cols).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",")
 				.csv("/home/hadoop/Downloads/TEST");
+	    
+	    long endWriting = System.currentTimeMillis();
+	    
+	    System.out.println(" Transform time = "+(endTransform - startProgram));
+	    System.out.println(" Write time = "+(endWriting - endTransform));
 		
 	}
 

@@ -10,6 +10,7 @@ import io.auton8.spark.rule.ConcatColumnRule;
 import io.auton8.spark.rule.DefaultColumnRule;
 import io.auton8.spark.rule.IRule;
 import io.auton8.spark.rule.MapFromExcelFileRule;
+import io.auton8.spark.rule.MapValuesFromColumnRule;
 import io.auton8.spark.rule.ModifyDateRule;
 import io.auton8.spark.rule.ReplaceRegexRule;
 import io.auton8.spark.rule.ReplaceRule;
@@ -39,6 +40,7 @@ public class RuleLoader {
 		ruleMap.put("concatRule", new ConcatColumnRule());
 		ruleMap.put("defaultRule", new DefaultColumnRule());
 		ruleMap.put("mapFromExcelFileRule", new MapFromExcelFileRule());
+		ruleMap.put("mapFromColumnRule", new MapValuesFromColumnRule());
 		ruleMap.put("modifyDataRule", new ModifyDateRule());
 		ruleMap.put("replaceRegexRule", new ReplaceRegexRule());
 		ruleMap.put("replaceRule", new ReplaceRule());
