@@ -44,7 +44,7 @@ public class DFComparator {
 		String [] rColumns = rDF.columns();
 		
 		for(int i = 0; i < javaColumns.length; i++) {
-			String newJavaColumn = javaColumns[i];
+//			String newJavaColumn = javaColumns[i];
 			String rColumn = new String(rColumns[i]);
 			
 //			if(newJavaColumn.contains(".")) {

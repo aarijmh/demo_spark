@@ -1,6 +1,32 @@
 
 package io.auton8.spark.processor;
 
+import static org.apache.spark.sql.functions.coalesce;
+import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.concat;
+import static org.apache.spark.sql.functions.date_format;
+import static org.apache.spark.sql.functions.expr;
+import static org.apache.spark.sql.functions.lit;
+import static org.apache.spark.sql.functions.lower;
+import static org.apache.spark.sql.functions.not;
+import static org.apache.spark.sql.functions.regexp_replace;
+import static org.apache.spark.sql.functions.substring;
+import static org.apache.spark.sql.functions.to_timestamp;
+import static org.apache.spark.sql.functions.upper;
+import static org.apache.spark.sql.functions.when;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
@@ -13,22 +39,6 @@ import io.auton8.spark.interfaces.ApplyInterface;
 import io.auton8.spark.interfaces.TransformInterface;
 import io.auton8.spark.utility.ExcelReader;
 import io.auton8.spark.utility.Pair;
-
-import static org.apache.spark.sql.functions.*;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.spark.sql.Column;
 
 
 
