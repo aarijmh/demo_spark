@@ -7,6 +7,7 @@ import java.util.stream.StreamSupport;
 
 import io.auton8.spark.rule.AliasRule;
 import io.auton8.spark.rule.ConcatColumnRule;
+import io.auton8.spark.rule.CopyColumnRule;
 import io.auton8.spark.rule.DefaultColumnRule;
 import io.auton8.spark.rule.IRule;
 import io.auton8.spark.rule.MapFromExcelFileRule;
@@ -41,10 +42,11 @@ public class RuleLoader {
 		ruleMap.put("defaultRule", new DefaultColumnRule());
 		ruleMap.put("mapFromExcelFileRule", new MapFromExcelFileRule());
 		ruleMap.put("mapFromColumnRule", new MapValuesFromColumnRule());
-		ruleMap.put("modifyDataRule", new ModifyDateRule());
+		ruleMap.put("modifyDateRule", new ModifyDateRule());
 		ruleMap.put("replaceRegexRule", new ReplaceRegexRule());
 		ruleMap.put("replaceRule", new ReplaceRule());
 		ruleMap.put("transformRule", new TransformRule());
+		ruleMap.put("copyColumnRule", new CopyColumnRule());
 	}
 	
 	public static Map<String, IRule> getRuleMap(){
