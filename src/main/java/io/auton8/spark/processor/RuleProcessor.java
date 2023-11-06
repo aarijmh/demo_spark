@@ -8,12 +8,16 @@ import static org.apache.spark.sql.functions.when;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -68,24 +72,26 @@ public class RuleProcessor {
 		}
 		return df;
 	}
-	
+
 	private static String pattern = "yyyyMMddHHmm";
 	private static SimpleDateFormat format = new SimpleDateFormat(pattern);
 
-	public static void writeDF(Dataset<Row> df, Column[] cols, String folderPath, String delimeter, String outfileName, Boolean header) {
-		df.select(cols).coalesce(1).write().mode(SaveMode.Overwrite).option("header", header).option("delimiter", delimeter)
-				.csv(folderPath);
-		
-		File[] files = (new File(folderPath)).listFiles(x->{
-			if(x.isDirectory())
+	public static void writeDF(Dataset<Row> df, Column[] cols, String folderPath, String delimeter, String outfileName,
+			Boolean header) {
+		df.select(cols).coalesce(1).write().mode(SaveMode.Overwrite).option("header", header)
+				.option("delimiter", delimeter).csv(folderPath);
+
+		File[] files = (new File(folderPath)).listFiles(x -> {
+			if (x.isDirectory())
 				return false;
-			if(x.getName().startsWith("part") && x.getName().endsWith(".csv"))
+			if (x.getName().startsWith("part") && x.getName().endsWith(".csv"))
 				return true;
 			return false;
 		});
-		
-		if(files.length > 0) {
-			files[0].renameTo(new File(folderPath+File.separator+outfileName.replace("%DATETIME%", format.format(new Date()))));
+
+		if (files.length > 0) {
+			files[0].renameTo(new File(
+					folderPath + File.separator + outfileName.replace("%DATETIME%", format.format(new Date()))));
 		}
 	}
 
@@ -143,11 +149,36 @@ public class RuleProcessor {
 		Column[] cols = colNames.stream().map(x -> {
 			return col(normalizeColumnNameForDF(x));
 		}).collect(Collectors.toList()).toArray(new Column[0]);
-		writeDF(df, cols, inputFile.getCompareLocation(), inputFile.getOutputDelimiter(), inputFile.getCompareTransformFileFormat(), true);
+		writeDF(df, cols, inputFile.getCompareLocation(), inputFile.getOutputDelimiter(),
+				inputFile.getCompareTransformFileFormat(), true);
 		return df;
 	}
 
-	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, FileNotFoundException {
+	public static void copyGeneratedFilesToFolder(InputFile inputFile, String targetFolder) throws IOException {
+		Path sourceDirectory = Paths.get(inputFile.getCompareLocation());
+		Path targetDirectory = Paths.get(targetFolder);
+		
+		if(!targetDirectory.toFile().exists()) {
+			targetDirectory.toFile().mkdirs();
+		}
+
+		FileUtils.cleanDirectory(targetDirectory.toFile());
+
+		FileUtils.copyDirectory(sourceDirectory.toFile(), targetDirectory.toFile());
+
+		if(inputFile.getWithHeader())
+		{
+			sourceDirectory = Paths.get(inputFile.getSaveLocationHeader());
+			FileUtils.copyDirectory(sourceDirectory.toFile(), targetDirectory.toFile());
+		}
+		
+		if(inputFile.getWithoutHeader()) {
+			sourceDirectory = Paths.get(inputFile.getSaveLocation());
+			FileUtils.copyDirectory(sourceDirectory.toFile(), targetDirectory.toFile());
+		}
+	}
+
+	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, IOException {
 
 		long start = System.currentTimeMillis();
 		InputFile inputFile = readConfiguration("/home/hadoop/Downloads/03 Limits/JSON/limits.json");
@@ -156,12 +187,14 @@ public class RuleProcessor {
 		Dataset<Row> df = createDFFromJSON(inputFile);
 		long dfCreated = System.currentTimeMillis();
 		Column[] cols = fetchColumnsToWrite(df, inputFile);
-	
-		if(inputFile.getWithoutHeader())
-			writeDF(df, cols, inputFile.getSaveLocation(), inputFile.getOutputDelimiter(), inputFile.getTransformFileFormat(),false);
-		if(inputFile.getWithHeader())
-			writeDF(df, cols, inputFile.getSaveLocationHeader(), inputFile.getOutputDelimiter(), inputFile.getTransformFileHeaderFormat(),inputFile.getWithHeader());
-		
+
+		if (inputFile.getWithoutHeader())
+			writeDF(df, cols, inputFile.getSaveLocation(), inputFile.getOutputDelimiter(),
+					inputFile.getTransformFileFormat(), false);
+		if (inputFile.getWithHeader())
+			writeDF(df, cols, inputFile.getSaveLocationHeader(), inputFile.getOutputDelimiter(),
+					inputFile.getTransformFileHeaderFormat(), inputFile.getWithHeader());
+
 		long fileWritten = System.currentTimeMillis();
 
 		System.out.println(String.format("Time taken to read %d, to create DF %d and to write %d", (fileRead - start),
@@ -172,6 +205,8 @@ public class RuleProcessor {
 		long transformTime = System.currentTimeMillis();
 
 		System.out.println(String.format("Transformation took %d", (transformTime - fileWritten)));
+		
+		copyGeneratedFilesToFolder(inputFile,"/home/hadoop/Downloads/GeneratedFiles");
 	}
 
 }
