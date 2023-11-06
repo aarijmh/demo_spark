@@ -1,7 +1,9 @@
 package io.auton8.spark.rule;
 
 import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.lit;
 import static org.apache.spark.sql.functions.regexp_replace;
+import static org.apache.spark.sql.functions.when;
 
 import java.util.Map;
 
@@ -41,7 +43,7 @@ public class ReplaceRegexRule implements IRule {
 			String replaceValue = (String) params.get("replaceValue");
 			
 			
-			return df.withColumn(aliasColumn, regexp_replace(col(originalColumn), findReg, replaceValue));
+			return df.withColumn(aliasColumn, when(col(originalColumn).isNull(), lit(replaceValue)).otherwise(regexp_replace(col(originalColumn),findReg, replaceValue)));
 		}
 		return df;
 	}
