@@ -20,6 +20,7 @@ public class InputFile {
     
 	private Map<String, String> fileOptions = new HashMap<>();
 	private List<FileColumn> columns;
+	private Map<String, String> aliases = new HashMap<>();
 	
 	
 	public String getFileName() {
@@ -93,6 +94,12 @@ public class InputFile {
 	}
 	public void setSaveLocationHeader(String saveLocationHeader) {
 		this.saveLocationHeader = saveLocationHeader;
+	}
+	public Map<String, String> getAliases() {
+		return aliases;
+	}
+	public void setAliases(Map<String, String> aliases) {
+		this.aliases = aliases;
 	}
 	
 	

@@ -63,26 +63,15 @@ public interface IRule {
 
 		String originalColumn = params.containsKey("originalColumn") ? (String) params.get("originalColumn") : null;
 		String aliasColumn = params.containsKey("aliasColumn") ? (String) params.get("aliasColumn") : null;
-
+		String transformedColumnSuffix = params.containsKey("transformedColumnSuffix") ? (String) params.get("transformedColumnSuffix") : "";;
+		
 		aliasColumn = resolveSameColumnName(originalColumn, aliasColumn);
 		String normalizedOriginalColumn = normalizeColumnNameForDF(originalColumn);
-//		int count = 1;
-//		if(cols.contains(originalColumn)) {
-//			String transformedColumn = originalColumn+"_"+count;
-//			while(cols.contains(transformedColumn)) {
-//				count++;
-//				transformedColumn = originalColumn+"_"+count;
-//			}
-//			
-//			df = df.withColumn(transformedColumn, col(normalizedOriginalColumn));
-//			originalColumn = transformedColumn;
-//		}
-//		
 		cols.add(originalColumn);
 
 		String newColumn = aliasColumn;
 		if (aliasColumn == null) {
-			newColumn = originalColumn + "_Transformed";
+			newColumn = originalColumn + transformedColumnSuffix;
 			df = df.withColumn(newColumn, col(normalizedOriginalColumn));
 		}
 

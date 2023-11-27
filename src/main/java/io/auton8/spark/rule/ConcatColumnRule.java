@@ -60,14 +60,14 @@ public class ConcatColumnRule implements IRule {
 		return null;
 	}
 
-	private Dataset<Row> solveColumnComparison(Dataset<Row> df, String originalColumn, String aliasColumn,
+	private Dataset<Row> solveColumnComparison(Dataset<Row> df, String originalColumn, String aliasColumn,String transformedColumnSuffix,
 			List<String> cols) {
 		String normalizedOriginalColumn = normalizeColumnNameForDF(originalColumn);
 		cols.add(originalColumn);
 
 		String newColumn = aliasColumn;
 		if (aliasColumn == null) {
-			newColumn = originalColumn + "_Transformed";
+			newColumn = originalColumn + transformedColumnSuffix;
 			df = df.withColumn(newColumn, col(normalizedOriginalColumn));
 		}
 
@@ -83,6 +83,9 @@ public class ConcatColumnRule implements IRule {
 							"not matched").otherwise("matched"));
 		} catch (Exception e) {
 			e.printStackTrace();
+			cols.remove(originalColumn);
+			cols.remove(newColumn);
+			cols.remove(compColumn);
 			throw e;
 		}
 
@@ -95,13 +98,14 @@ public class ConcatColumnRule implements IRule {
 		String column1 = params.containsKey("column1") ? (String) params.get("column1") : null;
 		String column2 = params.containsKey("column2") ? (String) params.get("column2") : null;
 		String aliasColumn = params.containsKey("aliasColumn") ? (String) params.get("aliasColumn") : null;
-
+		String transformedColumnSuffix = params.containsKey("transformedColumnSuffix") ? (String) params.get("transformedColumnSuffix") : "";
+		
 		aliasColumn = resolveSameColumnName(column1, aliasColumn);
-		df = solveColumnComparison(df, column1, aliasColumn, cols);
+		df = solveColumnComparison(df, column1, aliasColumn, transformedColumnSuffix, cols);
 		
 		String aliasColumn2 = aliasColumn+"_2";
 		df = df.withColumn(aliasColumn2, col(normalizeColumnNameForDF(aliasColumn)));
-		df = solveColumnComparison(df, column2, aliasColumn2, cols);
+		df = solveColumnComparison(df, column2, aliasColumn2, transformedColumnSuffix, cols);
 
 		return df;
 	}

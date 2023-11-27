@@ -116,6 +116,7 @@ public class RuleProcessor {
 
 	public static Dataset<Row> createCompareDataset(Dataset<Row> df, InputFile inputFile) {
 
+		String transformedColumnSuffix = "_Transformed";
 		List<String> colNames = new ArrayList<String>();
 		for (FileColumn fileColumn : inputFile.getColumns()) {
 			if (fileColumn.getRules() != null) {
@@ -123,6 +124,9 @@ public class RuleProcessor {
 					if (RuleLoader.getRuleMap().containsKey(fileRule.getRuleName())) {
 						if (fileRule.getParams() != null) {
 							fileRule.getParams().put("originalColumn", fileColumn.getColumnName());
+							fileRule.getParams().put("aliasColumn", fileColumn.getAliasName());
+							fileRule.getParams().put("transformedColumnSuffix", transformedColumnSuffix);
+							
 							df = RuleLoader.getRuleMap().get(fileRule.getRuleName()).comparisonRuleDispatch(df,
 									fileRule.getParams(), colNames);
 						}
@@ -133,7 +137,7 @@ public class RuleProcessor {
 				String normalizedColumnName = normalizeColumnNameForDF(fileColumn.getColumnName());
 				colNames.add(fileColumn.getColumnName());
 
-				String newName = fileColumn.getColumnName() + "_Transformed";
+				String newName = fileColumn.getColumnName() + transformedColumnSuffix;
 				colNames.add(newName);
 				df = df.withColumn(newName, col(normalizedColumnName));
 
@@ -181,7 +185,7 @@ public class RuleProcessor {
 	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, IOException {
 
 		long start = System.currentTimeMillis();
-		InputFile inputFile = readConfiguration("/home/hadoop/Downloads/03 Limits/JSON/limits.json");
+		InputFile inputFile = readConfiguration("D:\\auton8\\03 Limits\\JSON\\limits.json");
 		long fileRead = System.currentTimeMillis();
 
 		Dataset<Row> df = createDFFromJSON(inputFile);
@@ -206,7 +210,7 @@ public class RuleProcessor {
 
 		System.out.println(String.format("Transformation took %d", (transformTime - fileWritten)));
 		
-		copyGeneratedFilesToFolder(inputFile,"/home/hadoop/Downloads/GeneratedFiles");
+		copyGeneratedFilesToFolder(inputFile,"C:\\Users\\Lenovo\\Downloads\\GeneratedFiles");
 	}
 
 }

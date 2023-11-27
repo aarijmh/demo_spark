@@ -68,6 +68,9 @@ public class DefaultColumnRule implements IRule {
 		}
 		catch(Exception e) {
 			e.printStackTrace();
+			cols.remove(newColumn);
+			cols.remove(aliasColumn);
+			cols.remove(compColumn);
 			throw e;
 		}
 				
