@@ -185,7 +185,7 @@ public class RuleProcessor {
 	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, IOException {
 
 		long start = System.currentTimeMillis();
-		InputFile inputFile = readConfiguration("D:\\auton8\\03 Limits\\JSON\\limits.json");
+		InputFile inputFile = readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\JSON\\asst_reg_property.json");
 		long fileRead = System.currentTimeMillis();
 
 		Dataset<Row> df = createDFFromJSON(inputFile);
@@ -210,7 +210,7 @@ public class RuleProcessor {
 
 		System.out.println(String.format("Transformation took %d", (transformTime - fileWritten)));
 		
-		copyGeneratedFilesToFolder(inputFile,"C:\\Users\\Lenovo\\Downloads\\GeneratedFiles");
+		copyGeneratedFilesToFolder(inputFile,"C:\\Users\\dell\\Downloads\\GeneratedFiles");
 	}
 
 }

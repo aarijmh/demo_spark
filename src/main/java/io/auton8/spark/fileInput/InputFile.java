@@ -17,6 +17,8 @@ public class InputFile {
     private Boolean withoutHeader;
     private String transformFileHeaderFormat;
     private String saveLocationHeader;
+    private String baseFolder;
+    private String folderSeparator;
     
 	private Map<String, String> fileOptions = new HashMap<>();
 	private List<FileColumn> columns;
@@ -100,6 +102,18 @@ public class InputFile {
 	}
 	public void setAliases(Map<String, String> aliases) {
 		this.aliases = aliases;
+	}
+	public String getBaseFolder() {
+		return baseFolder;
+	}
+	public void setBaseFolder(String baseFolder) {
+		this.baseFolder = baseFolder;
+	}
+	public String getFolderSeparator() {
+		return folderSeparator;
+	}
+	public void setFolderSeparator(String folderSeparator) {
+		this.folderSeparator = folderSeparator;
 	}
 	
 	
