@@ -1,9 +1,8 @@
 package io.auton8.spark.rule;
 
 import static io.auton8.spark.utility.UtilityFunctions.normalizeColumnNameForDF;
+import static io.auton8.spark.utility.UtilityFunctions.compareColumns;
 import static org.apache.spark.sql.functions.lit;
-import static org.apache.spark.sql.functions.not;
-import static org.apache.spark.sql.functions.when;
 
 import java.util.List;
 import java.util.Map;
@@ -12,6 +11,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
 import io.auton8.spark.exceptions.RuleNotApplicatbleException;
+import io.auton8.spark.utility.Constants;
 
 public class DefaultColumnRule implements IRule {
 
@@ -64,7 +64,8 @@ public class DefaultColumnRule implements IRule {
 		cols.add(compColumn);
 		
 		try {
-			df = df.withColumn(compColumn, when(not(df.col(newColumn).eqNullSafe(df.col(normalizeColumnNameForDF(aliasColumn)))),"not matched").otherwise("matched"));	
+		//	df = df.withColumn(compColumn, when(not(df.col(newColumn).eqNullSafe(df.col(normalizeColumnNameForDF(aliasColumn)))),"not matched").otherwise("matched"));
+			df = compareColumns(df, compColumn, df.col(newColumn), df.col(normalizeColumnNameForDF(aliasColumn)), Constants.MATCHED_STRING, Constants.NOT_MATCHED_STRING);
 		}
 		catch(Exception e) {
 			e.printStackTrace();

@@ -1,6 +1,8 @@
 package io.auton8.spark.rule;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.sql.Dataset;
@@ -9,6 +11,7 @@ import org.apache.spark.sql.SparkSession;
 
 import io.auton8.spark.exceptions.RuleNotApplicatbleException;
 import io.auton8.spark.utility.ExcelReader;
+import io.auton8.spark.utility.UtilityFunctions;
 
 public class MapFromExcelFileRule implements IRule {
 
@@ -42,6 +45,7 @@ public class MapFromExcelFileRule implements IRule {
 		return true;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Dataset<Row> apply(Dataset<Row> df, Map<String, Object> params) throws RuleNotApplicatbleException {
 		if (canApply(df, params)) {
@@ -52,6 +56,7 @@ public class MapFromExcelFileRule implements IRule {
 			String keyColumn = (String) params.get("keyColumn");
 			String valueColumn = (String) params.get("valueColumn");
 			String joinColumn = (String) params.get("joinColumn");
+			List<String> dropTargetColumns = params.containsKey("dropTargetColumns") ? (List<String>) params.get("dropTargetColumns") : new ArrayList<String>();
 
 			SparkSession sparkSession = (SparkSession) params.get("sparkSession");
 
@@ -60,7 +65,10 @@ public class MapFromExcelFileRule implements IRule {
 			Dataset<Row> sectorDF = null;
 			try {
 				sectorDF = excelReader.readDatasetFromExcel(sparkSession, Path.of(excelSheetPath), sheetName, keyColumn,
-						valueColumn);
+						valueColumn).select(UtilityFunctions.normalizeColumnNameForDF(keyColumn), UtilityFunctions.normalizeColumnNameForDF(valueColumn));
+				for(String col : dropTargetColumns) {
+					sectorDF = sectorDF.drop(UtilityFunctions.normalizeColumnNameForDF(col));
+				}
 			} catch (Exception e) {
 				throw new RuleNotApplicatbleException(e.getMessage());
 			}
@@ -85,12 +93,14 @@ public class MapFromExcelFileRule implements IRule {
 				keyColumn += "1";
 			}
 
-			df = df.join(sectorDF, sectorDF.col(keyColumn).eqNullSafe(df.col(joinColumn)), "left");
-
 			if (found) {
-				df = df.drop(aliasColumn);
+				df = df.drop (aliasColumn);
 			}
+			
+			df = df.join(sectorDF, sectorDF.col(keyColumn).eqNullSafe(df.col(joinColumn)), "left");
+			
 			df = df.withColumnRenamed(valueColumn, aliasColumn);
+			//df.show(10);
 			return df;
 		}
 		return df;

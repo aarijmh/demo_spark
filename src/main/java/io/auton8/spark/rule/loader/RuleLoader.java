@@ -7,12 +7,15 @@ import java.util.stream.StreamSupport;
 
 import io.auton8.spark.rule.AliasRule;
 import io.auton8.spark.rule.ConcatColumnRule;
+import io.auton8.spark.rule.ConcatenateColumnRule;
+import io.auton8.spark.rule.ConcatenateMultiColumnRule;
 import io.auton8.spark.rule.CopyColumnRule;
 import io.auton8.spark.rule.DefaultColumnRule;
 import io.auton8.spark.rule.IRule;
 import io.auton8.spark.rule.MapFromExcelFileRule;
 import io.auton8.spark.rule.MapValuesFromColumnRule;
 import io.auton8.spark.rule.ModifyDateRule;
+import io.auton8.spark.rule.MultiReplaceRegexRule;
 import io.auton8.spark.rule.ReplaceRegexRule;
 import io.auton8.spark.rule.ReplaceRule;
 import io.auton8.spark.rule.TransformRule;
@@ -47,6 +50,9 @@ public class RuleLoader {
 		ruleMap.put("replaceRule", new ReplaceRule());
 		ruleMap.put("transformRule", new TransformRule());
 		ruleMap.put("copyColumnRule", new CopyColumnRule());
+		ruleMap.put("concatenateRule", new ConcatenateColumnRule());
+		ruleMap.put("concatenateMultiRule", new ConcatenateMultiColumnRule());
+		ruleMap.put("multiReplaceRegexRule", new MultiReplaceRegexRule());
 	}
 	
 	public static Map<String, IRule> getRuleMap(){

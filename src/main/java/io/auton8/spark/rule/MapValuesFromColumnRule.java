@@ -49,7 +49,6 @@ public class MapValuesFromColumnRule implements IRule {
 				buffer.append("when ").append(originalColumn).append(" = ").append("'").append(key).append("' then '").append(valueMap.get(key)).append("' ");
 			}		
 			buffer.append("else null end");
-			
 			return df.withColumn(aliasColumn, expr(buffer.toString()));
 		}
 		return df;

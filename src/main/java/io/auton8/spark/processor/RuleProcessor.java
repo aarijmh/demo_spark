@@ -2,8 +2,6 @@ package io.auton8.spark.processor;
 
 import static io.auton8.spark.utility.UtilityFunctions.normalizeColumnNameForDF;
 import static org.apache.spark.sql.functions.col;
-import static org.apache.spark.sql.functions.not;
-import static org.apache.spark.sql.functions.when;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,6 +31,9 @@ import io.auton8.spark.fileInput.FileColumn;
 import io.auton8.spark.fileInput.FileRule;
 import io.auton8.spark.fileInput.InputFile;
 import io.auton8.spark.rule.loader.RuleLoader;
+import io.auton8.spark.utility.Constants;
+import io.auton8.spark.utility.UtilityFunctions;
+
 
 public class RuleProcessor {
 
@@ -43,20 +44,22 @@ public class RuleProcessor {
 	public static Dataset<Row> createDFFromJSON(InputFile inputFile)
 			throws JsonSyntaxException, JsonIOException, FileNotFoundException {
 
-		Dataset<Row> df = getSparkSession().read().options(inputFile.getFileOptions()).csv(inputFile.getFileName());
+		Dataset<Row> df = getSparkSession().read().options(inputFile.getFileOptions()).csv(inputFile.getBaseFolder()+ File.separator+ inputFile.getFileName());
 
 		for (FileColumn fileColumn : inputFile.getColumns()) {
 			if (fileColumn.getAliasName() == null && fileColumn.getRules() == null) {
 				continue;
 			}
 
-			String originalName = normalizeColumnNameForDF(fileColumn.getColumnName());
+			String originalName = fileColumn.getColumnName() != null ? normalizeColumnNameForDF(fileColumn.getColumnName()) : null;
 			String aliasName = fileColumn.getAliasName();
 
 			if (fileColumn.getRules() != null) {
+				boolean firstTime = true;
 				for (FileRule fileRule : fileColumn.getRules()) {
 					fileRule.getParams().put("sparkSession", getSparkSession());
 					fileRule.getParams().put("originalColumn", originalName);
+					fileRule.getParams().put("firstTime", firstTime);
 					if (fileColumn.getAliasName() != null)
 						fileRule.getParams().put("aliasColumn", aliasName);
 					try {
@@ -66,6 +69,10 @@ public class RuleProcessor {
 								"Column name : " + fileColumn.getColumnName() + " -- " + fileRule.getRuleName());
 						e.printStackTrace();
 					}
+					if(fileColumn.getAliasName() != null) {
+						originalName = aliasName;
+					}
+					firstTime = false;
 				}
 			}
 
@@ -79,7 +86,7 @@ public class RuleProcessor {
 	public static void writeDF(Dataset<Row> df, Column[] cols, String folderPath, String delimeter, String outfileName,
 			Boolean header) {
 		df.select(cols).coalesce(1).write().mode(SaveMode.Overwrite).option("header", header)
-				.option("delimiter", delimeter).csv(folderPath);
+				.option("delimiter", delimeter).option("quote", "").option("escape", "\"").csv(folderPath);
 
 		File[] files = (new File(folderPath)).listFiles(x -> {
 			if (x.isDirectory())
@@ -126,11 +133,16 @@ public class RuleProcessor {
 							fileRule.getParams().put("originalColumn", fileColumn.getColumnName());
 							fileRule.getParams().put("aliasColumn", fileColumn.getAliasName());
 							fileRule.getParams().put("transformedColumnSuffix", transformedColumnSuffix);
-							
+							try {
 							df = RuleLoader.getRuleMap().get(fileRule.getRuleName()).comparisonRuleDispatch(df,
 									fileRule.getParams(), colNames);
+							}
+							catch(Exception e) {
+								e.printStackTrace();
+							}
 						}
 					}
+					break;
 				}
 			} else {
 
@@ -143,23 +155,25 @@ public class RuleProcessor {
 
 				String matchedName = fileColumn.getColumnName() + "=" + newName;
 				colNames.add(matchedName);
-
-				df = df.withColumn(matchedName,
-						when(not(df.col(normalizedColumnName).eqNullSafe(df.col(normalizeColumnNameForDF(newName)))),
-								"not matched").otherwise("matched"));
+				
+				df = UtilityFunctions.compareColumns(df, matchedName, df.col(normalizedColumnName), df.col(normalizeColumnNameForDF(newName)), Constants.MATCHED_STRING, Constants.NOT_MATCHED_STRING);
+//
+//				df =  df.withColumn(matchedName,
+//						when(not(df.col(normalizedColumnName).eqNullSafe(df.col(normalizeColumnNameForDF(newName)))),
+//								"not matched").otherwise("matched"));
 
 			}
 		}
 		Column[] cols = colNames.stream().map(x -> {
 			return col(normalizeColumnNameForDF(x));
 		}).collect(Collectors.toList()).toArray(new Column[0]);
-		writeDF(df, cols, inputFile.getCompareLocation(), inputFile.getOutputDelimiter(),
-				inputFile.getCompareTransformFileFormat(), true);
+		writeDF(df, cols, inputFile.getBaseFolder() + File.separator+inputFile.getCompareLocation(), inputFile.getOutputDelimiter(),
+				 inputFile.getCompareTransformFileFormat(), true);
 		return df;
 	}
 
 	public static void copyGeneratedFilesToFolder(InputFile inputFile, String targetFolder) throws IOException {
-		Path sourceDirectory = Paths.get(inputFile.getCompareLocation());
+		Path sourceDirectory = Paths.get(inputFile.getBaseFolder() + File.separator+inputFile.getCompareLocation());
 		Path targetDirectory = Paths.get(targetFolder);
 		
 		if(!targetDirectory.toFile().exists()) {
@@ -172,12 +186,12 @@ public class RuleProcessor {
 
 		if(inputFile.getWithHeader())
 		{
-			sourceDirectory = Paths.get(inputFile.getSaveLocationHeader());
+			sourceDirectory = Paths.get(inputFile.getBaseFolder() + File.separator+inputFile.getSaveLocationHeader());
 			FileUtils.copyDirectory(sourceDirectory.toFile(), targetDirectory.toFile());
 		}
 		
 		if(inputFile.getWithoutHeader()) {
-			sourceDirectory = Paths.get(inputFile.getSaveLocation());
+			sourceDirectory = Paths.get(inputFile.getBaseFolder() + File.separator+inputFile.getSaveLocation());
 			FileUtils.copyDirectory(sourceDirectory.toFile(), targetDirectory.toFile());
 		}
 	}
@@ -185,7 +199,7 @@ public class RuleProcessor {
 	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, IOException {
 
 		long start = System.currentTimeMillis();
-		InputFile inputFile = readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\JSON\\asst_reg_property.json");
+		InputFile inputFile = readConfiguration("D:\\auton8\\04 Collateral\\04 Real State\\JSON\\real_state.json");
 		long fileRead = System.currentTimeMillis();
 
 		Dataset<Row> df = createDFFromJSON(inputFile);
@@ -193,10 +207,10 @@ public class RuleProcessor {
 		Column[] cols = fetchColumnsToWrite(df, inputFile);
 
 		if (inputFile.getWithoutHeader())
-			writeDF(df, cols, inputFile.getSaveLocation(), inputFile.getOutputDelimiter(),
-					inputFile.getTransformFileFormat(), false);
+			writeDF(df, cols, inputFile.getBaseFolder() + File.separator+inputFile.getSaveLocation(), inputFile.getOutputDelimiter(),
+					 inputFile.getTransformFileFormat(), false);
 		if (inputFile.getWithHeader())
-			writeDF(df, cols, inputFile.getSaveLocationHeader(), inputFile.getOutputDelimiter(),
+			writeDF(df, cols, inputFile.getBaseFolder() + File.separator+ inputFile.getSaveLocationHeader(), inputFile.getOutputDelimiter(),
 					inputFile.getTransformFileHeaderFormat(), inputFile.getWithHeader());
 
 		long fileWritten = System.currentTimeMillis();
@@ -210,7 +224,7 @@ public class RuleProcessor {
 
 		System.out.println(String.format("Transformation took %d", (transformTime - fileWritten)));
 		
-		copyGeneratedFilesToFolder(inputFile,"C:\\Users\\dell\\Downloads\\GeneratedFiles");
+		copyGeneratedFilesToFolder(inputFile,"D:\\auton8\\04 Collateral\\generated REAL STATE");
 	}
 
 }

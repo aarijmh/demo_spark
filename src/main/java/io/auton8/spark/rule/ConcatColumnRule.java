@@ -1,19 +1,23 @@
 package io.auton8.spark.rule;
 
 import static io.auton8.spark.utility.UtilityFunctions.normalizeColumnNameForDF;
+import static io.auton8.spark.utility.UtilityFunctions.compareColumns;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.concat;
 import static org.apache.spark.sql.functions.lit;
-import static org.apache.spark.sql.functions.not;
 import static org.apache.spark.sql.functions.when;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
 import io.auton8.spark.exceptions.RuleNotApplicatbleException;
+import io.auton8.spark.utility.Constants;
 
 public class ConcatColumnRule implements IRule {
 
@@ -60,8 +64,16 @@ public class ConcatColumnRule implements IRule {
 		return null;
 	}
 
-	private Dataset<Row> solveColumnComparison(Dataset<Row> df, String originalColumn, String aliasColumn,String transformedColumnSuffix,
+	protected Dataset<Row> solveColumnComparison(Dataset<Row> df, String originalColumn, String aliasColumn,String transformedColumnSuffix,
 			List<String> cols) {
+		Stream<String> stream = Arrays.stream(df.columns()); 
+		Map<String, String> nameMap = stream.collect(Collectors.toMap(x->x, x->x));
+		if(nameMap.containsKey(originalColumn)) {
+			int count = 0;
+			while(nameMap.containsKey(originalColumn+"_"+(++count)));
+			df = df.withColumn(originalColumn +"_"+count, col(normalizeColumnNameForDF(originalColumn)));
+			originalColumn = originalColumn +"_"+count;
+		}
 		String normalizedOriginalColumn = normalizeColumnNameForDF(originalColumn);
 		cols.add(originalColumn);
 
@@ -78,9 +90,7 @@ public class ConcatColumnRule implements IRule {
 		cols.add(compColumn);
 
 		try {
-			df = df.withColumn(compColumn,
-					when(not(df.col(normalizedOriginalColumn).eqNullSafe(df.col(normalizeColumnNameForDF(newColumn)))),
-							"not matched").otherwise("matched"));
+			df = compareColumns(df, compColumn, df.col(normalizedOriginalColumn), df.col(normalizeColumnNameForDF(newColumn)), Constants.MATCHED_STRING, Constants.NOT_MATCHED_STRING);
 		} catch (Exception e) {
 			e.printStackTrace();
 			cols.remove(originalColumn);
