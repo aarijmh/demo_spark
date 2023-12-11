@@ -23,7 +23,7 @@ public class InputFile {
 	private Map<String, String> fileOptions = new HashMap<>();
 	private List<FileColumn> columns;
 	private Map<String, String> aliases = new HashMap<>();
-	
+	private List<FileColumn> preExtractCompareColumns;
 	
 	public String getFileName() {
 		return fileName;
@@ -114,6 +114,12 @@ public class InputFile {
 	}
 	public void setFolderSeparator(String folderSeparator) {
 		this.folderSeparator = folderSeparator;
+	}
+	public List<FileColumn> getPreExtractCompareColumns() {
+		return preExtractCompareColumns;
+	}
+	public void setPreExtractCompareColumns(List<FileColumn> preExtractCompareColumns) {
+		this.preExtractCompareColumns = preExtractCompareColumns;
 	}
 	
 	

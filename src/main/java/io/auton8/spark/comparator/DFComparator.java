@@ -14,11 +14,13 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
+import io.auton8.spark.exceptions.RuleNotApplicatbleException;
 import io.auton8.spark.fileInput.FileColumn;
 import io.auton8.spark.fileInput.FileRule;
 import io.auton8.spark.fileInput.InputFile;
@@ -71,17 +73,57 @@ public class DFComparator {
 		secondDF = secondDF.union(schema);
 	}
 
-	public static void compareDF(Dataset<Row> sourceDF, Dataset<Row> targetDF, String keyColumn, InputFile inputFile) {
+	public static void compareDF(Dataset<Row> sourceDF, Dataset<Row> targetDF, String keyColumn, InputFile inputFile, String outputFolder) {
 		// targetDF =
 		// targetDF.withColumn(normalizeColumnNameForDF(keyColumn+"_extract"),
 		// col(normalizeColumnNameForDF(keyColumn)));
+
+		/*
+		 * PRE EXTRACT ROUTINE
+		 */
+		if (inputFile.getPreExtractCompareColumns() != null)
+			for (FileColumn fileColumn : inputFile.getPreExtractCompareColumns()) {
+				if (fileColumn.getAliasName() == null && fileColumn.getRules() == null) {
+					continue;
+				}
+
+				String originalName = fileColumn.getColumnName() != null ? normalizeColumnNameForDF(fileColumn.getColumnName()) : null;
+				String aliasName = fileColumn.getAliasName();
+
+				if (fileColumn.getRules() != null) {
+					boolean firstTime = true;
+					for (FileRule fileRule : fileColumn.getRules()) {
+						fileRule.getParams().put("sparkSession", getSparkSession());
+						fileRule.getParams().put("originalColumn", originalName);
+						fileRule.getParams().put("firstTime", firstTime);
+						if (fileColumn.getAliasName() != null)
+							fileRule.getParams().put("aliasColumn", aliasName);
+						try {
+							sourceDF = RuleLoader.getRuleMap().get(fileRule.getRuleName()).process(sourceDF, fileRule.getParams());
+						} catch (RuleNotApplicatbleException e) {
+							System.out.println("Column name : " + fileColumn.getColumnName() + " -- " + fileRule.getRuleName());
+							e.printStackTrace();
+						}
+						if (fileColumn.getAliasName() != null) {
+							originalName = aliasName;
+						}
+						firstTime = false;
+					}
+				}
+
+			}
+		//sourceDF.coalesce(1).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");
+		/*
+		 * END PRE EXTRACT ROUTINE
+		 */
+		//sourceDF.show(10);
 		String normalizedKeyColumn = normalizeColumnNameForDF(keyColumn);
 		String normalizedExtractKeyColumn = normalizeColumnNameForDF(keyColumn + "_Extract");
 		System.out.println(targetDF.count());
 		for (String columnName : targetDF.columns()) {
 			targetDF = targetDF.withColumnRenamed(columnName, columnName + "_Extract");
 		}
-		Dataset<Row> df = targetDF.join(sourceDF, targetDF.col(normalizedExtractKeyColumn).eqNullSafe(sourceDF.col(normalizedKeyColumn)), "leftouter");
+		Dataset<Row> df = targetDF.join(sourceDF, targetDF.col(normalizedExtractKeyColumn).equalTo(sourceDF.col(normalizedKeyColumn)), "left");
 
 		List<String> existingColumnNames = List.of(df.columns());
 
@@ -94,12 +136,14 @@ public class DFComparator {
 						if (RuleLoader.getRuleMap().containsKey(fileRule.getRuleName())) {
 							if (fileRule.getParams() != null) {
 								fileRule.getParams().put("originalColumn", fileColumn.getColumnName());
-								fileRule.getParams().put("aliasColumn", existingColumnNames.contains(fileColumn.getAliasName()+"_Extract") ? fileColumn.getAliasName() + "_Extract" : inputFile.getAliases().get(fileColumn.getAliasName()) + "_Extract");
+								fileRule.getParams().put("aliasColumn",
+										existingColumnNames.contains(fileColumn.getAliasName() + "_Extract") ? fileColumn.getAliasName() + "_Extract" : inputFile.getAliases().get(fileColumn.getAliasName()) + "_Extract");
 								fileRule.getParams().put("transformedColumnSuffix", transformedColumnSuffix);
 
 								df = RuleLoader.getRuleMap().get(fileRule.getRuleName()).comparisonRuleDispatch(df, fileRule.getParams(), colNames);
 							}
 						}
+						break;
 					}
 				} else {
 
@@ -123,20 +167,20 @@ public class DFComparator {
 		Column[] cols = colNames.stream().map(x -> {
 			return col(normalizeColumnNameForDF(x));
 		}).collect(Collectors.toList()).toArray(new Column[0]);
-		RuleProcessor.writeDF(df, cols, "d:\\TEST COMPARE", ",", inputFile.getCompareTransformFileFormat(), true);
+		RuleProcessor.writeDF(df, cols, outputFolder, "|", inputFile.getCompareTransformFileFormat(), true);
 
-		//df.show();
+		// df.show();
 	}
 
 	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, FileNotFoundException {
 
-		InputFile inputFile = RuleProcessor.readConfiguration("D:\\auton8\\01 Customer\\JSON\\customer.json");
+		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\JSON\\asst_reg_property.json");
 
-		Dataset<Row> sourceDF = getSparkSession().read().option("header", true).option("delimiter", "|").csv("D:\\auton8\\01 Customer\\source\\CUSTOM.20230409.txt");
+		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\source\\R_COLLAT.20230412.txt");
 
-		Dataset<Row> extractDF = getSparkSession().read().option("header", true).option("delimiter", "|").csv("D:\\auton8\\01 Customer\\extract\\CUSTOMER.01.202326090130-EXTRACT.txt");
+		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\extract\\ASSET.REG.PROPERTY.AUTON8.202312060646.txt");
 
-		compareDF(sourceDF, extractDF, "CUSTOMER.CODE", inputFile);
+		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\comparison\\extract");
 	}
 
 }
