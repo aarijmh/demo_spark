@@ -174,13 +174,40 @@ public class DFComparator {
 
 	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, FileNotFoundException {
 
-		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\JSON\\asst_reg_property.json");
+//		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\JSON\\motor_vehicle.json");
+//
+//		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\source\\M_COLLAT.20232911.txt");
+//
+//		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\extract\\COLLATERAL.VEHICLE.AUTON8.202312110230.txt");
+//
+//		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\comparison\\extract");
+//		
+//		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\JSON\\boat.json");
+//
+//		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\source\\B_COLLAT.20232911.txt");
+//
+//		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\extract\\COLLATERAL.BOAT.AUTON8.202312110230-EXTRACT.txt");
+//
+//		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\comparison\\extract");
+		
+//		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\JSON\\real_state.json");
+//
+//		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\source\\R_COLLAT.20230412.txt");
+//
+//		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\extract\\COLLATERAL.REAL.ESTATE.AUTON8.202312110230.txt");
+//
+//		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\comparison\\extract");
 
-		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\source\\R_COLLAT.20230412.txt");
+		
+		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\JSON\\asst_reg_property.json");
 
-		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\extract\\ASSET.REG.PROPERTY.AUTON8.202312060646.txt");
+		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\source\\R_COLLAT.20230412.txt");
 
-		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\04 Collateral\\01 Asset Reg Property\\comparison\\extract");
+		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\extract\\ASSET.REG.PROPERTY.AUTON8.202312060646.txt");
+
+		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\comparison\\extract");
+
+
 	}
 
 }
