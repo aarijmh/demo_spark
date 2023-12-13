@@ -20,7 +20,6 @@ import org.apache.spark.sql.SparkSession;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-import io.auton8.spark.exceptions.RuleNotApplicatbleException;
 import io.auton8.spark.fileInput.FileColumn;
 import io.auton8.spark.fileInput.FileRule;
 import io.auton8.spark.fileInput.InputFile;
@@ -82,36 +81,8 @@ public class DFComparator {
 		 * PRE EXTRACT ROUTINE
 		 */
 		if (inputFile.getPreExtractCompareColumns() != null)
-			for (FileColumn fileColumn : inputFile.getPreExtractCompareColumns()) {
-				if (fileColumn.getAliasName() == null && fileColumn.getRules() == null) {
-					continue;
-				}
-
-				String originalName = fileColumn.getColumnName() != null ? normalizeColumnNameForDF(fileColumn.getColumnName()) : null;
-				String aliasName = fileColumn.getAliasName();
-
-				if (fileColumn.getRules() != null) {
-					boolean firstTime = true;
-					for (FileRule fileRule : fileColumn.getRules()) {
-						fileRule.getParams().put("sparkSession", getSparkSession());
-						fileRule.getParams().put("originalColumn", originalName);
-						fileRule.getParams().put("firstTime", firstTime);
-						if (fileColumn.getAliasName() != null)
-							fileRule.getParams().put("aliasColumn", aliasName);
-						try {
-							sourceDF = RuleLoader.getRuleMap().get(fileRule.getRuleName()).process(sourceDF, fileRule.getParams());
-						} catch (RuleNotApplicatbleException e) {
-							System.out.println("Column name : " + fileColumn.getColumnName() + " -- " + fileRule.getRuleName());
-							e.printStackTrace();
-						}
-						if (fileColumn.getAliasName() != null) {
-							originalName = aliasName;
-						}
-						firstTime = false;
-					}
-				}
-
-			}
+			sourceDF = RuleProcessor.processColumnRules(sourceDF, inputFile.getPreExtractCompareColumns());
+		
 		//sourceDF.where(col("SECURITY_ID").contains("R*19526")).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");;
 		//sourceDF.coalesce(1).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");
 		/*
@@ -122,38 +93,7 @@ public class DFComparator {
 		 * PRE EXTRACT TARGET ROUTINE
 		 */
 		if (inputFile.getPreExtractCompareColumnsTarget() != null)
-			for (FileColumn fileColumn : inputFile.getPreExtractCompareColumnsTarget()) {
-				if (fileColumn.getAliasName() == null && fileColumn.getRules() == null) {
-					continue;
-				}
-
-				String originalName = fileColumn.getColumnName() != null ? normalizeColumnNameForDF(fileColumn.getColumnName()) : null;
-				String aliasName = fileColumn.getAliasName();
-
-				if (fileColumn.getRules() != null) {
-					boolean firstTime = true;
-					for (FileRule fileRule : fileColumn.getRules()) {
-						fileRule.getParams().put("sparkSession", getSparkSession());
-						fileRule.getParams().put("originalColumn", originalName);
-						fileRule.getParams().put("firstTime", firstTime);
-						if (fileColumn.getAliasName() != null)
-							fileRule.getParams().put("aliasColumn", aliasName);
-						try {
-							targetDF = RuleLoader.getRuleMap().get(fileRule.getRuleName()).process(targetDF, fileRule.getParams());
-						} catch (RuleNotApplicatbleException e) {
-							System.out.println("Column name : " + fileColumn.getColumnName() + " -- " + fileRule.getRuleName());
-							e.printStackTrace();
-						}
-						if (fileColumn.getAliasName() != null) {
-							originalName = aliasName;
-						}
-						firstTime = false;
-					}
-				}
-
-			}
-		//sourceDF.where(col("SECURITY_ID").contains("R*19526")).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");;
-		//sourceDF.coalesce(1).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");
+			targetDF = RuleProcessor.processColumnRules(targetDF, inputFile.getPreExtractCompareColumnsTarget());
 		/*
 		 * END PRE EXTRACT TARGET ROUTINE
 		 */

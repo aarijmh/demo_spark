@@ -41,12 +41,8 @@ public class RuleProcessor {
 		return SparkSession.builder().appName("Customer Aggregation pipeline").master("local").getOrCreate();
 	}
 
-	public static Dataset<Row> createDFFromJSON(InputFile inputFile)
-			throws JsonSyntaxException, JsonIOException, FileNotFoundException {
-
-		Dataset<Row> df = getSparkSession().read().options(inputFile.getFileOptions()).csv(inputFile.getBaseFolder()+ File.separator+ inputFile.getFileName());
-
-		for (FileColumn fileColumn : inputFile.getColumns()) {
+	public static Dataset<Row> processColumnRules(Dataset<Row> df, List<FileColumn> columns){
+		for (FileColumn fileColumn : columns) {
 			if (fileColumn.getAliasName() == null && fileColumn.getRules() == null) {
 				continue;
 			}
@@ -77,6 +73,17 @@ public class RuleProcessor {
 			}
 
 		}
+		return df;
+	}
+	
+	public static Dataset<Row> createDFFromJSON(InputFile inputFile)
+			throws JsonSyntaxException, JsonIOException, FileNotFoundException {
+
+		Dataset<Row> df = getSparkSession().read().options(inputFile.getFileOptions()).csv(inputFile.getBaseFolder()+ File.separator+ inputFile.getFileName());
+
+		if(inputFile.getColumns() != null)
+			df = processColumnRules(df, inputFile.getColumns());
+		
 		return df;
 	}
 
