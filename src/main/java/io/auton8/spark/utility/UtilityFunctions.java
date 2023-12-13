@@ -1,6 +1,7 @@
 package io.auton8.spark.utility;
 
 import static org.apache.spark.sql.functions.when;
+import static org.apache.spark.sql.functions.trim;
 
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
@@ -22,7 +23,7 @@ public class UtilityFunctions {
 				.otherwise(when(originalColumn.isNull().and(targetColumn.eqNullSafe("")),matchedString)
 						.otherwise(when(originalColumn.isNull().and(targetColumn.eqNullSafe("")),matchedString)
 								.otherwise(when(originalColumn.eqNullSafe("").and(targetColumn.isNull()),matchedString)
-										.otherwise(when(originalColumn.eqNullSafe(targetColumn),matchedString).otherwise(notMatchedString))))));
+										.otherwise(when(trim(originalColumn).eqNullSafe(trim(targetColumn)),matchedString).otherwise(notMatchedString))))));
 				
 	}
 }

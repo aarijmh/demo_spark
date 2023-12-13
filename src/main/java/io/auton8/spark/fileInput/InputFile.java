@@ -19,11 +19,13 @@ public class InputFile {
     private String saveLocationHeader;
     private String baseFolder;
     private String folderSeparator;
+    private String compareExtractFileFormat;
     
 	private Map<String, String> fileOptions = new HashMap<>();
 	private List<FileColumn> columns;
 	private Map<String, String> aliases = new HashMap<>();
 	private List<FileColumn> preExtractCompareColumns;
+	private List<FileColumn> preExtractCompareColumnsTarget;
 	
 	public String getFileName() {
 		return fileName;
@@ -120,6 +122,18 @@ public class InputFile {
 	}
 	public void setPreExtractCompareColumns(List<FileColumn> preExtractCompareColumns) {
 		this.preExtractCompareColumns = preExtractCompareColumns;
+	}
+	public String getCompareExtractFileFormat() {
+		return compareExtractFileFormat;
+	}
+	public void setCompareExtractFileFormat(String compareExtractFileFormat) {
+		this.compareExtractFileFormat = compareExtractFileFormat;
+	}
+	public List<FileColumn> getPreExtractCompareColumnsTarget() {
+		return preExtractCompareColumnsTarget;
+	}
+	public void setPreExtractCompareColumnsTarget(List<FileColumn> preExtractCompareColumnsTarget) {
+		this.preExtractCompareColumnsTarget = preExtractCompareColumnsTarget;
 	}
 	
 	

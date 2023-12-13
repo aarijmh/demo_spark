@@ -18,6 +18,7 @@ import io.auton8.spark.rule.ModifyDateRule;
 import io.auton8.spark.rule.MultiReplaceRegexRule;
 import io.auton8.spark.rule.ReplaceRegexRule;
 import io.auton8.spark.rule.ReplaceRule;
+import io.auton8.spark.rule.SplitAndSelectColumnRule;
 import io.auton8.spark.rule.TransformRule;
 
 
@@ -53,6 +54,7 @@ public class RuleLoader {
 		ruleMap.put("concatenateRule", new ConcatenateColumnRule());
 		ruleMap.put("concatenateMultiRule", new ConcatenateMultiColumnRule());
 		ruleMap.put("multiReplaceRegexRule", new MultiReplaceRegexRule());
+		ruleMap.put("splitAndSelectRule", new SplitAndSelectColumnRule());
 	}
 	
 	public static Map<String, IRule> getRuleMap(){

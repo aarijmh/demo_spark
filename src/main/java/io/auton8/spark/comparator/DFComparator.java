@@ -3,6 +3,7 @@ package io.auton8.spark.comparator;
 import static io.auton8.spark.utility.UtilityFunctions.normalizeColumnNameForDF;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.not;
+import static org.apache.spark.sql.functions.trim;
 import static org.apache.spark.sql.functions.when;
 
 import java.io.FileNotFoundException;
@@ -14,7 +15,6 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
-import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 
 import com.google.gson.JsonIOException;
@@ -49,7 +49,7 @@ public class DFComparator {
 			secondDF = sourceDF;
 		}
 
-		Dataset<Row> intermediaryDF = mainDF.join(secondDF, extractDF.col(normalizedColumn).eqNullSafe(secondDF.col(normalizedColumn)), "anti");
+		Dataset<Row> intermediaryDF = mainDF.join(secondDF, trim(extractDF.col(normalizedColumn)).eqNullSafe(trim(secondDF.col(normalizedColumn))), "anti");
 
 		Row[] row = (Row[]) intermediaryDF.select(normalizedColumn).collect();
 
@@ -112,18 +112,62 @@ public class DFComparator {
 				}
 
 			}
+		//sourceDF.where(col("SECURITY_ID").contains("R*19526")).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");;
 		//sourceDF.coalesce(1).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");
 		/*
 		 * END PRE EXTRACT ROUTINE
 		 */
-		//sourceDF.show(10);
+		
+		/*
+		 * PRE EXTRACT TARGET ROUTINE
+		 */
+		if (inputFile.getPreExtractCompareColumnsTarget() != null)
+			for (FileColumn fileColumn : inputFile.getPreExtractCompareColumnsTarget()) {
+				if (fileColumn.getAliasName() == null && fileColumn.getRules() == null) {
+					continue;
+				}
+
+				String originalName = fileColumn.getColumnName() != null ? normalizeColumnNameForDF(fileColumn.getColumnName()) : null;
+				String aliasName = fileColumn.getAliasName();
+
+				if (fileColumn.getRules() != null) {
+					boolean firstTime = true;
+					for (FileRule fileRule : fileColumn.getRules()) {
+						fileRule.getParams().put("sparkSession", getSparkSession());
+						fileRule.getParams().put("originalColumn", originalName);
+						fileRule.getParams().put("firstTime", firstTime);
+						if (fileColumn.getAliasName() != null)
+							fileRule.getParams().put("aliasColumn", aliasName);
+						try {
+							targetDF = RuleLoader.getRuleMap().get(fileRule.getRuleName()).process(targetDF, fileRule.getParams());
+						} catch (RuleNotApplicatbleException e) {
+							System.out.println("Column name : " + fileColumn.getColumnName() + " -- " + fileRule.getRuleName());
+							e.printStackTrace();
+						}
+						if (fileColumn.getAliasName() != null) {
+							originalName = aliasName;
+						}
+						firstTime = false;
+					}
+				}
+
+			}
+		//sourceDF.where(col("SECURITY_ID").contains("R*19526")).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");;
+		//sourceDF.coalesce(1).write().mode(SaveMode.Overwrite).option("header", true).option("delimiter", ",").option("quote", "").option("escape", "\"").csv("d:\\test2");
+		/*
+		 * END PRE EXTRACT TARGET ROUTINE
+		 */
+		
+		
+		//targetDF.show(10);
+		
 		String normalizedKeyColumn = normalizeColumnNameForDF(keyColumn);
 		String normalizedExtractKeyColumn = normalizeColumnNameForDF(keyColumn + "_Extract");
 		System.out.println(targetDF.count());
 		for (String columnName : targetDF.columns()) {
 			targetDF = targetDF.withColumnRenamed(columnName, columnName + "_Extract");
 		}
-		Dataset<Row> df = targetDF.join(sourceDF, targetDF.col(normalizedExtractKeyColumn).equalTo(sourceDF.col(normalizedKeyColumn)), "left");
+		Dataset<Row> df = targetDF.join(sourceDF, trim(targetDF.col(normalizedExtractKeyColumn)).eqNullSafe(trim(sourceDF.col(normalizedKeyColumn))), "full");
 
 		List<String> existingColumnNames = List.of(df.columns());
 
@@ -167,45 +211,68 @@ public class DFComparator {
 		Column[] cols = colNames.stream().map(x -> {
 			return col(normalizeColumnNameForDF(x));
 		}).collect(Collectors.toList()).toArray(new Column[0]);
-		RuleProcessor.writeDF(df, cols, outputFolder, "|", inputFile.getCompareTransformFileFormat(), true);
+		RuleProcessor.writeDF(df, cols, outputFolder, "|", inputFile.getCompareExtractFileFormat(), true);
 
 		// df.show();
 	}
 
 	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, FileNotFoundException {
-
-//		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\JSON\\motor_vehicle.json");
-//
-//		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\source\\M_COLLAT.20232911.txt");
-//
-//		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\extract\\COLLATERAL.VEHICLE.AUTON8.202312110230.txt");
-//
-//		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\02 MOTOR VEHICLE\\comparison\\extract");
-//		
-//		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\JSON\\boat.json");
-//
-//		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\source\\B_COLLAT.20232911.txt");
-//
-//		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\extract\\COLLATERAL.BOAT.AUTON8.202312110230-EXTRACT.txt");
-//
-//		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\03 BOAT\\comparison\\extract");
 		
-//		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\JSON\\real_state.json");
-//
-//		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\source\\R_COLLAT.20230412.txt");
-//
-//		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\extract\\COLLATERAL.REAL.ESTATE.AUTON8.202312110230.txt");
-//
-//		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\04 Real State\\comparison\\extract");
+		String baseFolder = "C:\\Users\\Lenovo\\OneDrive - auton8.io\\auton8\\";
 
+		/*
+		 * InputFile inputFile = RuleProcessor.readConfiguration(
+		 * baseFolder+"04 Collateral\\02 MOTOR VEHICLE\\JSON\\motor_vehicle.json");
+		 * 
+		 * Dataset<Row> sourceDF =
+		 * getSparkSession().read().options(inputFile.getFileOptions()).csv(
+		 * baseFolder+"04 Collateral\\02 MOTOR VEHICLE\\source\\M_COLLAT.20232911.txt");
+		 * 
+		 * Dataset<Row> extractDF =
+		 * getSparkSession().read().options(inputFile.getFileOptions()).csv(
+		 * baseFolder+"04 Collateral\\02 MOTOR VEHICLE\\extract\\COLLATERAL.VEHICLE.AUTON8.202312110230.txt"
+		 * );
+		 * 
+		 * compareDF(sourceDF, extractDF, "NOTES", inputFile,
+		 * baseFolder+"04 Collateral\\02 MOTOR VEHICLE\\comparison\\extract");
+		 */
 		
-		InputFile inputFile = RuleProcessor.readConfiguration("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\JSON\\asst_reg_property.json");
+		/*
+		 * InputFile inputFile = RuleProcessor.readConfiguration(
+		 * baseFolder+"04 Collateral\\03 BOAT\\JSON\\boat.json");
+		 * 
+		 * Dataset<Row> sourceDF =
+		 * getSparkSession().read().options(inputFile.getFileOptions()).csv(
+		 * baseFolder+"04 Collateral\\03 BOAT\\source\\B_COLLAT.20232911.txt");
+		 * 
+		 * Dataset<Row> extractDF =
+		 * getSparkSession().read().options(inputFile.getFileOptions()).csv(
+		 * baseFolder+"04 Collateral\\03 BOAT\\extract\\COLLATERAL.BOAT.AUTON8.202312110230-EXTRACT.txt"
+		 * );
+		 * 
+		 * compareDF(sourceDF, extractDF, "NOTES", inputFile,
+		 * baseFolder+"04 Collateral\\03 BOAT\\comparison\\extract");
+		 */	
+		/*
+		 * InputFile inputFile = RuleProcessor.readConfiguration(
+		 * baseFolder+"04 Collateral\\04 Real State\\JSON\\real_state.json"); //
+		 * Dataset<Row> sourceDF =
+		 * getSparkSession().read().options(inputFile.getFileOptions()).csv(
+		 * baseFolder+"04 Collateral\\04 Real State\\source\\R_COLLAT.20230412.txt"); //
+		 * Dataset<Row> extractDF =
+		 * getSparkSession().read().options(inputFile.getFileOptions()).csv(
+		 * baseFolder+"04 Collateral\\04 Real State\\extract\\COLLATERAL.REAL.ESTATE.AUTON8.202312110230.txt"
+		 * ); // compareDF(sourceDF, extractDF, "NOTES", inputFile,
+		 * baseFolder+"04 Collateral\\04 Real State\\comparison\\extract");
+		 */
+		
+		InputFile inputFile = RuleProcessor.readConfiguration(baseFolder+"04 Collateral\\01 Asset Reg Property\\JSON\\asst_reg_property.json");
 
-		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\source\\R_COLLAT.20230412.txt");
+		Dataset<Row> sourceDF = getSparkSession().read().options(inputFile.getFileOptions()).csv(baseFolder+"\\04 Collateral\\01 Asset Reg Property\\source\\R_COLLAT.20230412.txt");
 
-		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv("C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\extract\\ASSET.REG.PROPERTY.AUTON8.202312060646.txt");
+		Dataset<Row> extractDF = getSparkSession().read().options(inputFile.getFileOptions()).csv(baseFolder+"\\04 Collateral\\01 Asset Reg Property\\extract\\ASSET.REG.PROPERTY.AUTON8.202312060646.txt");
 
-		compareDF(sourceDF, extractDF, "NOTES", inputFile, "C:\\Users\\dell\\auton8\\04 Collateral\\01 Asset Reg Property\\comparison\\extract");
+		compareDF(sourceDF, extractDF, "SECURITY_ID", inputFile, baseFolder+"\\04 Collateral\\01 Asset Reg Property\\comparison\\extract");
 
 
 	}

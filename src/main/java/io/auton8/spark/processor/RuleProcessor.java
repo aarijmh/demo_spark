@@ -157,11 +157,6 @@ public class RuleProcessor {
 				colNames.add(matchedName);
 				
 				df = UtilityFunctions.compareColumns(df, matchedName, df.col(normalizedColumnName), df.col(normalizeColumnNameForDF(newName)), Constants.MATCHED_STRING, Constants.NOT_MATCHED_STRING);
-//
-//				df =  df.withColumn(matchedName,
-//						when(not(df.col(normalizedColumnName).eqNullSafe(df.col(normalizeColumnNameForDF(newName)))),
-//								"not matched").otherwise("matched"));
-
 			}
 		}
 		Column[] cols = colNames.stream().map(x -> {
